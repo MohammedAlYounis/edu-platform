@@ -1,0 +1,17 @@
+---
+description: Edu platform — architecture, i18n, Supabase/RLS (see AGENTS.md)
+alwaysApply: true
+---
+
+# edu_platform
+
+Full project context: **AGENTS.md** at repo root.
+
+Non-negotiables:
+
+- Riverpod + repositories only for Supabase (never `Supabase.instance` in widgets)
+- All UI strings via `context.t('key')`; add keys to both `assets/lang/ar.json` and `en.json`
+- Errors as `Failure(messageKey)` — translate only in presentation
+- Permissions enforced in Postgres RLS, not UI-only checks
+- Soft delete: `is_active = false` for subjects/contents
+- User settings (locale, theme, notifications): **SharedPreferences** — not Hive
