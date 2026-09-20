@@ -179,6 +179,8 @@
   "ends_prefix": "ينتهي:",
   "date_validation_error": "تأكد من تاريخي البداية والنهاية (النهاية بعد البداية)",
   "add_content_failed": "تعذر إضافة المحتوى، حاول مرة أخرى.",
+  "content_title_required": "يرجى إدخال عنوان المحتوى.",
+  "content_file_required": "يرجى اختيار ملف PDF.",
 
   "search_submissions_hint": "ابحث باسم الطالب، رقمه، أو عنوان الاختبار...",
   "filter_all": "الكل",

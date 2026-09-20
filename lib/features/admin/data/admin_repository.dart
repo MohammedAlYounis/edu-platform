@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -194,7 +194,7 @@ class AdminRepository {
     required String title,
     String? description,
     required ContentType type,
-    required File file,
+    required Uint8List fileBytes,
     required String fileName,
     required int orderIndex,
     DateTime? availableFrom,
@@ -204,7 +204,7 @@ class AdminRepository {
     final storagePath = '$subjectId/${DateTime.now().millisecondsSinceEpoch}_$fileName';
 
     try {
-      await _client.storage.from(bucket).upload(storagePath, file);
+      await _client.storage.from(bucket).uploadBinary(storagePath, fileBytes);
     } catch (e, st) {
       throw mapExceptionToFailure(e, st);
     }
@@ -219,7 +219,7 @@ class AdminRepository {
             'type': type == ContentType.lesson ? 'lesson' : 'exam',
             'file_path': storagePath,
             'file_name': fileName,
-            'file_size': await file.length(),
+            'file_size': fileBytes.length,
             'mime_type': 'application/pdf',
             'order_index': orderIndex,
             'available_from': availableFrom?.toIso8601String(),

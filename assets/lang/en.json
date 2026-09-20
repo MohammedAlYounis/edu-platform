@@ -181,6 +181,8 @@
   "ends_prefix": "Ends:",
   "date_validation_error": "Check the start and end dates (end must be after start)",
   "add_content_failed": "Failed to add content, please try again.",
+  "content_title_required": "Enter a content title.",
+  "content_file_required": "Choose a PDF file.",
 
   "search_submissions_hint": "Search by student name, number, or exam title...",
   "filter_all": "All",

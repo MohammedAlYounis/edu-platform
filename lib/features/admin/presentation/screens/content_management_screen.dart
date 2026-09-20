@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_enums.dart';
 import '../../../../core/localization/localization_extension.dart';
+import '../../../../shared/utils/platform_file_bytes.dart';
 import '../../../../shared/models/content.dart';
 import '../../../../shared/widgets/state_views.dart';
 import '../../application/admin_providers.dart';
@@ -46,7 +45,7 @@ class _ContentManagementScreenState
     required ContentType type,
     required int nextOrder,
   }) async {
-    final context = this.context;
+    final pageContext = context;
     final titleController = TextEditingController();
     final descController = TextEditingController();
     DateTime? availableFrom;
@@ -54,7 +53,7 @@ class _ContentManagementScreenState
     PlatformFile? pickedFile;
 
     final confirmed = await showDialog<bool>(
-      context: context,
+      context: pageContext,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           title: Text(type == ContentType.lesson
@@ -81,7 +80,9 @@ class _ContentManagementScreenState
                   label: Text(pickedFile?.name ?? context.t('choose_pdf_file')),
                   onPressed: () async {
                     final result = await FilePicker.platform.pickFiles(
-                        type: FileType.custom, allowedExtensions: ['pdf']);
+                        type: FileType.custom,
+                        allowedExtensions: ['pdf'],
+                        withData: true);
                     if (result != null) {
                       setState(() => pickedFile = result.files.single);
                     }
@@ -122,8 +123,16 @@ class _ContentManagementScreenState
             ),
             FilledButton(
               onPressed: () {
-                if (titleController.text.trim().isEmpty ||
-                    pickedFile?.path == null) {
+                if (titleController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(pageContext).showSnackBar(
+                    SnackBar(content: Text(context.t('content_title_required'))),
+                  );
+                  return;
+                }
+                if (pickedFile?.bytes == null && pickedFile?.path == null) {
+                  ScaffoldMessenger.of(pageContext).showSnackBar(
+                    SnackBar(content: Text(context.t('content_file_required'))),
+                  );
                   return;
                 }
                 if (type == ContentType.exam &&
@@ -144,9 +153,18 @@ class _ContentManagementScreenState
       ),
     );
 
-    if (confirmed != true || pickedFile?.path == null) return;
+    if (confirmed != true ||
+        (pickedFile?.bytes == null && pickedFile?.path == null)) {
+      titleController.dispose();
+      descController.dispose();
+      return;
+    }
 
     try {
+      final fileBytes = await readPlatformFileBytes(pickedFile!);
+      if (fileBytes == null) {
+        throw StateError('Selected file bytes are unavailable');
+      }
       await ref.read(adminRepositoryProvider).createContent(
             subjectId: subjectId,
             title: titleController.text.trim(),
@@ -154,7 +172,7 @@ class _ContentManagementScreenState
                 ? null
                 : descController.text.trim(),
             type: type,
-            file: File(pickedFile!.path!),
+            fileBytes: fileBytes,
             fileName: pickedFile!.name,
             orderIndex: nextOrder,
             availableFrom: availableFrom,
@@ -166,6 +184,9 @@ class _ContentManagementScreenState
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(context.t('add_content_failed'))));
       }
+    } finally {
+      titleController.dispose();
+      descController.dispose();
     }
   }
 
