@@ -1,1 +1,28 @@
-{"flutter":{"platforms":{"dart":{"lib/firebase_options.dart":{"projectId":"educational-platform-bd155","configurations":{"android":"1:850119558458:android:85d25360489c7b8ce5bc03","web":"1:850119558458:web:55cf6257e823bcb8e5bc03"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "educational-platform-bd155",
+          "configurations": {
+            "android": "1:850119558458:android:85d25360489c7b8ce5bc03",
+            "web": "1:850119558458:web:55cf6257e823bcb8e5bc03"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
