@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_enums.dart';
+import '../../../../core/errors/failure.dart';
 import '../../../../core/localization/localization_extension.dart';
 import '../../../../shared/utils/platform_file_bytes.dart';
 import '../../../../shared/models/content.dart';
@@ -179,10 +180,17 @@ class _ContentManagementScreenState
             availableUntil: availableUntil,
           );
       ref.invalidate(subjectContentsAdminProvider(subjectId));
-    } catch (e) {
+    } on Failure catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(context.t('add_content_failed'))));
+          SnackBar(content: Text(context.t(e.messageKey))),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.t('add_content_failed'))),
+        );
       }
     } finally {
       titleController.dispose();

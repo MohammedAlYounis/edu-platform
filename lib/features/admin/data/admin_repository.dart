@@ -204,7 +204,14 @@ class AdminRepository {
     final storagePath = '$subjectId/${DateTime.now().millisecondsSinceEpoch}_$fileName';
 
     try {
-      await _client.storage.from(bucket).uploadBinary(storagePath, fileBytes);
+      await _client.storage.from(bucket).uploadBinary(
+            storagePath,
+            fileBytes,
+            fileOptions: const FileOptions(
+              contentType: 'application/pdf',
+              upsert: false,
+            ),
+          );
     } catch (e, st) {
       throw mapExceptionToFailure(e, st);
     }
@@ -241,7 +248,11 @@ class AdminRepository {
       } catch (_) {}
     } catch (e, st) {
       // نفس مبدأ rollback المستخدم في SubmissionsRepository — لا نترك ملفًا يتيمًا
-      await _client.storage.from(bucket).remove([storagePath]);
+      try {
+        await _client.storage.from(bucket).remove([storagePath]);
+      } catch (_) {
+        // Preserve the original database error; cleanup is best effort.
+      }
       throw mapExceptionToFailure(e, st);
     }
   }
