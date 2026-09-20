@@ -82,8 +82,9 @@ class _ContentManagementScreenState
                   onPressed: () async {
                     final result = await FilePicker.platform.pickFiles(
                         type: FileType.custom, allowedExtensions: ['pdf']);
-                    if (result != null)
+                    if (result != null) {
                       setState(() => pickedFile = result.files.single);
+                    }
                   },
                 ),
                 if (type == ContentType.exam) ...[
@@ -122,7 +123,9 @@ class _ContentManagementScreenState
             FilledButton(
               onPressed: () {
                 if (titleController.text.trim().isEmpty ||
-                    pickedFile?.path == null) return;
+                    pickedFile?.path == null) {
+                  return;
+                }
                 if (type == ContentType.exam &&
                     (availableFrom == null ||
                         availableUntil == null ||
@@ -299,8 +302,9 @@ class _ContentManagementScreenState
               ref.invalidate(subjectContentsAdminProvider(subjectId)),
         ),
         data: (contents) {
-          if (contents.isEmpty)
+          if (contents.isEmpty) {
             return EmptyState(message: context.t('no_content'));
+          }
           return ReorderableListView.builder(
             padding: const EdgeInsets.all(12),
             itemCount: contents.length,

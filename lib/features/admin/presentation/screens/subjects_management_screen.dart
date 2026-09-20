@@ -114,8 +114,9 @@ class _SubjectsManagementScreenState
           onRetry: () => ref.invalidate(allSubjectsAdminProvider),
         ),
         data: (subjects) {
-          if (subjects.isEmpty)
+          if (subjects.isEmpty) {
             return EmptyState(message: context.t('no_subjects'));
+          }
           return ReorderableListView.builder(
             padding: const EdgeInsets.all(12),
             itemCount: subjects.length,

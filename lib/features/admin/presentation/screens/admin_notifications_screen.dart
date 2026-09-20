@@ -138,7 +138,7 @@ class _AdminNotificationsScreenState
                   loading: () => const LinearProgressIndicator(),
                   error: (_, __) => Text(context.t('load_failed')),
                   data: (subjects) => DropdownButtonFormField<String>(
-                    value: _selectedSubjectId,
+                    initialValue: _selectedSubjectId,
                     decoration:
                         InputDecoration(labelText: context.t('select_subject')),
                     items: subjects
@@ -159,7 +159,7 @@ class _AdminNotificationsScreenState
                   loading: () => const LinearProgressIndicator(),
                   error: (_, __) => Text(context.t('load_failed')),
                   data: (students) => DropdownButtonFormField<String>(
-                    value: _selectedStudentId,
+                    initialValue: _selectedStudentId,
                     decoration:
                         InputDecoration(labelText: context.t('select_student')),
                     items: students
