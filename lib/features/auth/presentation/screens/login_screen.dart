@@ -107,7 +107,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const FlutterLogo(size: 72),
+                  Image.asset(
+                    'assets/images/app-icon-edu.jpeg',
+                    width: 72,
+                    height: 72,
+                  ),
                   const SizedBox(height: 32),
                   Text(
                     context.t('login'),

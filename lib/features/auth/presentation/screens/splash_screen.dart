@@ -7,9 +7,13 @@ class SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: Center(
-        child: FlutterLogo(size: 96), // يُستبدل بشعار التطبيق الفعلي
+        child: Image.asset(
+          'assets/images/app-icon-edu.jpeg',
+          width: 96,
+          height: 96,
+        ),
       ),
     );
   }
