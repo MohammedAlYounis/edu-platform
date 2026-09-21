@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/errors/failure.dart';
 import '../../../../core/network/supabase_client_provider.dart';
+import '../../../../shared/utils/storage_file_name.dart';
 import '../models/submission.dart';
 
 final submissionsRepositoryProvider = Provider<SubmissionsRepository>((ref) {
@@ -67,8 +68,7 @@ class SubmissionsRepository {
       throw const AuthFailure('يجب تسجيل الدخول أولًا.');
     }
 
-    final storagePath =
-        'submissions/$userId/$contentId/${DateTime.now().millisecondsSinceEpoch}_$fileName';
+    final storagePath = 'submissions/$userId/$contentId/${createStorageFileName(fileName)}';
 
     try {
       await _client.storage.from('submissions').upload(storagePath, file);

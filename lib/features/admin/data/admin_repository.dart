@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/constants/app_enums.dart';
 import '../../../core/network/supabase_client_provider.dart';
 import '../../../shared/models/content.dart';
+import '../../../shared/utils/storage_file_name.dart';
 import '../../subjects/data/models/subject.dart';
 import 'models/admin_models.dart';
 import 'models/dashboard_stats.dart';
@@ -201,7 +202,7 @@ class AdminRepository {
     DateTime? availableUntil,
   }) async {
     final bucket = type == ContentType.lesson ? 'lessons' : 'exams';
-    final storagePath = '$subjectId/${DateTime.now().millisecondsSinceEpoch}_$fileName';
+    final storagePath = '$subjectId/${createStorageFileName(fileName)}';
 
     try {
       await _client.storage.from(bucket).uploadBinary(
