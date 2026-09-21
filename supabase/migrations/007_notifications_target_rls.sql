@@ -1,6 +1,7 @@
 -- Restrict notification reads at the database boundary.
 -- The Flutter query remains an optimization; it is not the security boundary.
 drop policy if exists "notifications_select_authenticated" on public.notifications;
+drop policy if exists "notifications_select_targeted" on public.notifications;
 
 create policy "notifications_select_targeted"
 on public.notifications for select
