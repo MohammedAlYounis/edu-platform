@@ -1,242 +1,364 @@
-# Educational Platform
+# Mustaqbali Educational Platform
 
-## Phase 1 ✅ Project Setup
-راجع الشرح في الرسالة الأولى — لم يتغيّر شيء هنا عدا الانتقال من `--dart-define` إلى ملف `.env`.
+Flutter-based educational platform with a student application, an administration
+dashboard, Supabase backend services, and Firebase notifications/hosting.
 
-> ⚠️ **مهم:** أول استخدام فعلي لـ Freezed هو `UserProfile` في Phase 2، لذا شغّل بعد `flutter pub get`:
-> ```bash
-> dart run build_runner build --delete-conflicting-outputs
-> ```
-> بدونه لن يُوجد `user_profile.freezed.dart` وسيفشل الـ build.
+The project is currently published from the `main` branch:
 
-## إعداد المفاتيح (.env)
-1. افتح ملف `.env` في جذر المشروع.
-2. عبّئ:
-   ```
-   SUPABASE_URL=https://xxxx.supabase.co
-   SUPABASE_ANON_KEY=xxxx
-   ```
-3. `.env` مُستثنى من Git تلقائيًا (`.gitignore`) — لا تُشارك المفتاح العام حتى لو كان anon key منخفض الصلاحيات، لأنه سيُقيَّد لاحقًا بـ RLS فقط، والأفضل عدم رفعه لأي repo عام.
+- Repository: <https://github.com/MohammedAlYounis/edu-platform>
+- Web dashboard: <https://educational-platform-bd155.web.app>
+- Current branding: **Mustaqbali** (`مستقبلي`)
 
-## التشغيل
-```bash
+## Features
+
+### Student application
+
+- Email/password authentication.
+- Google OAuth.
+- Subjects and lesson browsing.
+- PDF lesson viewing and local PDF caching.
+- Exam availability windows.
+- PDF solution submission.
+- Database-enforced active-submission rules.
+- Submission status, grading, and resubmission requests.
+- Notifications and notification read state.
+- Profile, language, theme, cache, privacy, terms, and logout settings.
+
+### Administration dashboard
+
+- Dashboard statistics.
+- Student search and activation controls.
+- Subject management.
+- Lesson and exam content management.
+- PDF upload to Supabase Storage.
+- Submission filtering and review.
+- Grades and resubmission requests.
+- Notification creation and targeted delivery.
+
+## Technology
+
+- Flutter and Dart.
+- Riverpod for state management.
+- `reactive_forms` for forms.
+- GoRouter for navigation.
+- Freezed and JSON serialization for models.
+- Supabase Auth, Postgres, Storage, and Row Level Security.
+- Firebase Cloud Messaging and Firebase Hosting.
+- `SharedPreferences` for user settings.
+- `pdfx` for PDF viewing.
+- `file_picker` for PDF selection.
+- Arabic and English localization.
+
+## Architecture
+
+Features follow a Clean Architecture layout:
+
+```text
+lib/
+├── core/
+│   ├── config/
+│   ├── errors/
+│   ├── localization/
+│   ├── network/
+│   └── storage/
+├── features/
+│   └── <feature>/
+│       ├── data/
+│       │   ├── models/
+│       │   └── repositories/
+│       ├── application/
+│       └── presentation/
+│           ├── screens/
+│           └── widgets/
+└── shared/
+    ├── models/
+    ├── services/
+    ├── utils/
+    └── widgets/
+```
+
+Rules:
+
+- Supabase access belongs in repositories.
+- Riverpod providers/notifiers connect repositories to presentation.
+- RLS is the security boundary; UI checks are only for user experience.
+- User-visible strings use `context.t('key')`.
+- Every localization key must exist in both `assets/lang/ar.json` and
+  `assets/lang/en.json`.
+- Repository errors are converted to `Failure` objects with translation keys.
+- Related records are soft-deleted with `is_active = false`.
+
+## Requirements
+
+- Flutter SDK compatible with the Dart constraint in `pubspec.yaml`
+  (`>=3.3.0 <4.0.0`).
+- Dart SDK.
+- Node.js and `npx` for Supabase CLI commands.
+- A Supabase project.
+- A Firebase project for Hosting and notifications.
+- Android Studio or another Flutter-supported Android toolchain for Android builds.
+
+Verify the local installation:
+
+```powershell
+flutter doctor
+dart --version
+node --version
+npx supabase --version
+```
+
+## Local setup
+
+### 1. Get the source
+
+```powershell
+git clone https://github.com/MohammedAlYounis/edu-platform.git
+Set-Location edu-platform
+```
+
+### 2. Configure environment variables
+
+Copy `.env.example` to `.env` and set the values:
+
+```dotenv
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-supabase-publishable-key
+FIREBASE_WEB_VAPID_KEY=your-firebase-web-push-certificate-key
+```
+
+`.env` is ignored by Git. Never commit service-role keys, private Firebase
+credentials, or OAuth client secrets.
+
+### 3. Install dependencies and generate code
+
+```powershell
 flutter pub get
+dart run build_runner build --delete-conflicting-outputs
+```
+
+### 4. Apply Supabase migrations
+
+Link the local project once:
+
+```powershell
+npx supabase link --project-ref eneqsskqrdlvpnjersrq
+```
+
+Apply all migrations:
+
+```powershell
+npx supabase db push --linked
+```
+
+Verify the local and remote migration histories:
+
+```powershell
+npx supabase migration list --linked
+```
+
+The current repository includes migrations `001` through `008`. The latest
+migrations include targeted notification RLS and repaired lesson/exam Storage
+buckets and policies.
+
+The account used for administration must have:
+
+```text
+profiles.role = admin
+profiles.is_active = true
+```
+
+## Run the application
+
+Run the student application on a connected device or emulator:
+
+```powershell
 flutter run
 ```
-لا حاجة لـ `--dart-define` بعد الآن؛ القيم تُقرأ من `.env` مباشرة عبر `flutter_dotenv`.
 
----
+Run the web dashboard locally:
 
-## Phase 2 ✅ Authentication
-
-### 1) تطبيق الـ Migration على Supabase
-انسخ محتوى `supabase/migrations/001_profiles.sql` وشغّله في SQL Editor بلوحة Supabase (أو عبر Supabase CLI: `supabase db push`).
-
-يقوم بـ:
-- إنشاء جدول `profiles` مع `student_number` فريد (UNIQUE).
-- Trigger تلقائي (`handle_new_user`) ينشئ صف profile عند كل تسجيل جديد في `auth.users`.
-- تفعيل RLS: كل مستخدم يرى/يعدّل صفّه فقط، الـ admin يرى الجميع.
-- منع أي مستخدم عادي من تعديل `role` أو `is_active` أو `student_number` بنفسه (trigger حماية إضافي، وليس فقط RLS).
-
-### 2) تفعيل Google OAuth
-في لوحة Supabase → Authentication → Providers → Google:
-1. فعّل Google واملأ Client ID / Client Secret من Google Cloud Console.
-2. أضف Redirect URL الذي تعرضه Supabase إلى "Authorized redirect URIs" في Google Console.
-3. لتفعيل الرجوع للتطبيق بعد OAuth على الموبايل، ستحتاج لاحقًا ضبط Deep Link (`io.supabase.eduplatform://login-callback`) — سنُفصّله عند تجهيز build فعلي على جهاز حقيقي، لأنه يحتاج تعديل AndroidManifest.xml / Info.plist.
-
-### 3) ما تم بناؤه
-- `AuthRepository`: كل عمليات Supabase Auth (signIn, signUp, signInWithGoogle, signOut, fetchCurrentProfile) — لا استدعاء مباشر لـ Supabase خارج هذا الملف.
-- `AuthNotifier` (AsyncNotifier<UserProfile?>): يبث حالة (جلسة + profile كامل) معًا، ويُحدَّث تلقائيًا عند أي تغيّر في الجلسة عبر `onAuthStateChange`.
-- `LoginScreen` / `RegisterScreen`: نماذج حقيقية بـ `reactive_forms` — validation فوري، رسائل عربية واضحة، Loading state أثناء الإرسال، تحقق تطابق كلمة المرور في التسجيل.
-- `GoRouterRefreshStream`: يجعل GoRouter يعيد تقييم الـ redirect تلقائيًا فور تغيّر حالة المصادقة (لا حاجة لإعادة تشغيل الشاشة يدويًا).
-- `HomeScreen` مؤقتة تعرض اسم الطالب ورقمه الجامعي + زر تسجيل خروج — للتحقق العملي من نجاح كامل تدفق: تسجيل → تحقق الجلسة → جلب profile → توجيه → خروج.
-
-### اختبار المرحلة يدويًا
-1. `flutter run` بعد تعبئة `.env` وتطبيق الـ migration.
-2. سجّل حسابًا جديدًا برقم جامعي معيّن → يجب أن تنتقل تلقائيًا لـ Home وترى اسمك ورقمك.
-3. جرّب التسجيل بنفس الرقم الجامعي مرة أخرى → يجب أن تظهر رسالة "هذا الرقم الجامعي مستخدم مسبقًا."
-4. اضغط تسجيل خروج → يجب أن تعود لشاشة Login تلقائيًا.
-5. سجّل دخول بنفس الحساب من جديد.
-
-> Google OAuth لن يعمل فعليًا حتى تُفعَّل الخطوات أعلاه في لوحة Supabase وتُضبط الـ Redirect بشكل صحيح على جهاز حقيقي — الزر موجود وجاهز في الكود.
-
----
-
-## الخطوة التالية: Phase 3 — Database (باقي الجداول)
-- `subjects`, `contents`, `submissions`, `notifications`, `user_devices`.
-- RLS الكاملة لكل جدول (حسب المستند المعتمد).
-- Storage buckets + policies (لا public على submissions).
-- Partial unique index لقاعدة "submission واحد فعّال".
-
----
-
-## Phase 3 ✅ Database (باقي الجداول + Storage)
-
-### تطبيق الـ migrations بالترتيب
-شغّل الملفات التالية بالترتيب في SQL Editor (أو `supabase db push` إذا تستخدم CLI):
-
-1. `002_subjects_contents.sql` — المواد والمحتوى (دروس/اختبارات)
-2. `003_submissions.sql` — الحلول + قاعدة "submission واحد فعّال"
-3. `004_notifications_devices.sql` — الإشعارات + FCM tokens
-4. `005_storage.sql` — الـ buckets الخمسة + كل الـ policies
-
-> يجب أن يكون `001_profiles.sql` مُطبَّقًا مسبقًا (Phase 2) لأن باقي الجداول تعتمد على `public.is_admin()` و `profiles`.
-
-### أهم القرارات التصميمية المطبَّقة
-
-**قاعدة "Submission واحد فعّال" (بند 13/54.2):**
-- عمود `is_superseded` على `submissions` بدل الحذف أو التعديل — أي حل قديم يبقى كسجل تاريخي.
-- `unique index` جزئي (`where is_superseded = false`) يمنع فعليًا وجود أكثر من حل فعّال واحد لكل (طالب + اختبار)، حتى تحت تزامن عالٍ.
-- `trigger` قبل كل INSERT يتحقق من: نوع المحتوى exam فعلًا، الاختبار متاح ضمن `available_from/until`، ثم إما يسمح بالإدراج (ويُعلِّم القديم superseded إذا `can_resubmit = true`) أو يرفضه برسالة عربية واضحة.
-- **الطالب لا يملك أي صلاحية UPDATE على submissions إطلاقًا** — لا grade، لا status، لا can_resubmit — القرار الأكثر أمانًا بدل محاولة تقييد أعمدة معينة بصلاحية معقّدة.
-
-**Content (دروس/اختبارات):**
-- `constraint chk_exam_dates` على مستوى الجدول: الدرس يجب أن يكون تاريخاه NULL، الاختبار يجب أن يملك تاريخين صحيحين (`until > from`) — هذا يمنع بيانات متناقضة من الجذر، وليس فقط validation في Flutter.
-
-**Notifications:**
-- أضفت جدول `notification_reads` منفصل بدل عمود read/unread على notifications نفسها، لأن نفس الإشعار (مثلاً "اختبار جديد") يستهدف عدة طلاب دفعة واحدة — عمود واحد لا يكفي لتتبع من قرأ ومن لم يقرأ.
-
-**Storage:**
-- `submissions` bucket **غير عام** (`public: false`) + RLS على `storage.objects` تتحقق أن أول جزء من المسار (`foldername`) يطابق `auth.uid()` — حماية مزدوجة حتى لو تسرّب مسار الملف، لأن الوصول الفعلي من التطبيق سيكون عبر Signed URL قصير الأجل وليس رابطًا دائمًا.
-- `lessons`/`exams` قراءة لأي `authenticated` (لا حاجة Signed URL — ليست بيانات شخصية).
-- مسار الرفع المتوقع من التطبيق: `submissions/{student_id}/{content_id}/{timestamp}_{filename}.pdf`.
-
-### اختبار المرحلة
-بعد تطبيق كل الملفات، تحقق يدويًا من SQL Editor:
-```sql
-select public.is_admin(); -- يجب أن ترجع false إن لم تكن مسجّلًا كـ admin بعد
-select * from storage.buckets; -- يجب أن ترى الخمسة buckets، submissions/lessons/exams public=false
-```
-لجعل حسابك admin مؤقتًا للاختبار (يدويًا فقط، ليس عبر التطبيق):
-```sql
-update public.profiles set role = 'admin' where email = 'your-email@example.com';
+```powershell
+flutter run -d chrome
 ```
 
----
+The application loads `.env` through `flutter_dotenv`. Do not use
+`--dart-define` unless the configuration implementation is changed accordingly.
 
-## الخطوة التالية: Phase 4 — Student App
-- بناء `SubjectsRepository`, `ContentRepository`, `SubmissionsRepository` + Freezed models (`Subject`, `Content`, `Submission`).
-- شاشات: Home (بأقسامها الحقيقية)، Subjects، Subject Details، Lesson، Exam.
-- رفع ملف PDF فعليًا إلى `submissions` bucket + إنشاء الـ submission، مع Confirmation Dialog قبل الإرسال.
-- PDF Viewer (Syncfusion) لعرض ملفات الدروس والاختبارات.
+## Upload behavior
 
----
+Lesson, exam, and student-solution uploads use binary uploads on Supabase
+Storage. Storage object names are generated as ASCII-only names, for example:
 
-## Phase 4 ✅ Student App
-
-### ما تم بناؤه
-- **Models**: `Subject`, `Content` (بمنطق `availability` المحسوب من الوقت الحالي، بند 51)، `Submission`.
-- **Repositories**: `SubjectsRepository` (يجلب عدد الدروس/الاختبارات بـ query واحد بدل N+1)، `ContentRepository`، `SubmissionsRepository` (رفع الملف + إنشاء السجل، مع rollback تلقائي للملف إذا فشل إنشاء السجل بعد الرفع — بند 50).
-- **`PdfCacheService`**: يحمّل ملف PDF مرة واحدة عبر الجلسة المصادَق عليها ويخزّنه محليًا (hash-based)، فلا يُعاد التنزيل عند كل فتح.
-- **`PdfViewerWidget`**: Loading/Error/Retry + Syncfusion PDF viewer (Zoom/Scroll مدمجان).
-- **`SubmissionUploadNotifier`**: يمنع الضغط المتكرر أثناء الرفع، ويحوّل رسالة "حل مُرسَل مسبقًا" القادمة من الـ DB trigger إلى نص عربي واضح.
-- **الشاشات**: `SubjectsScreen` (Cards + عدد الدروس/الاختبارات)، `SubjectDetailsScreen` (محتوى مرتّب برقم تسلسلي)، `LessonScreen` (PDF فقط، بند 10)، `ExamScreen` (فتح الأسئلة + رفع الحل + Confirmation Dialog + عرض الحالة/العلامة/الملاحظات + دعم "رفع حل جديد" عند `needs_resubmission`)، `HomeScreen` (كل الأقسام الحقيقية: آخر الدروس، اختبارات حالية، اختبارات قريبة الانتهاء، آخر الحلول، Quick Actions).
-- إضافة `.env` — لا تنسَ `flutter pub get` ثم `build_runner build` بعد كل تعديل على الـ Freezed models الجديدة (Subject, Content, Submission).
-
-### ملاحظة الترخيص (محدَّثة)
-تم استبدال `syncfusion_flutter_pdfviewer` بـ **`pdfx`** — رخصة MIT مفتوحة المصدر بالكامل، بدون أي قيود تجارية أو حاجة لتفعيل Community License. `PdfViewerWidget` الآن يدعم pinch-to-zoom + عداد صفحات + نفس تدفق Loading/Error/Retry.
-
-### اختبار المرحلة يدويًا
-1. أضف مادة + درس + اختبار يدويًا من SQL Editor (لوحة الإدارة لسّا ما بُنيت — Phase 5):
-   ```sql
-   insert into subjects (title, order_index) values ('رياضيات', 1) returning id;
-   -- استخدم الـ id الناتج بالأسفل، وارفع ملف PDF تجريبي إلى bucket lessons/exams يدويًا من لوحة Storage
-   insert into contents (subject_id, title, type, file_path, file_name, order_index)
-   values ('<subject_id>', 'مقدمة', 'lesson', '<path_in_lessons_bucket>.pdf', 'intro.pdf', 1);
-   insert into contents (subject_id, title, type, file_path, file_name, order_index, available_from, available_until)
-   values ('<subject_id>', 'اختبار الوحدة 1', 'exam', '<path_in_exams_bucket>.pdf', 'exam1.pdf', 2, now(), now() + interval '7 days');
-   ```
-2. `flutter run` → المواد يجب أن تظهر في Home والـ Subjects.
-3. افتح الدرس → PDF يفتح ويُخزَّن محليًا (جرّب وضع الطيران بعد أول فتح، يجب أن يفتح من الـ cache).
-4. افتح الاختبار → ارفع ملف PDF → يجب أن تظهر رسالة التأكيد ثم "تم الإرسال" ثم يختفي زر الرفع.
-5. حاول الدخول للاختبار مرة أخرى → يجب ألا يظهر زر رفع جديد (لا submission ثانٍ ممكن).
-
----
-
-## الخطوة التالية: Phase 5 — Admin Web Panel
-- Flutter Web منفصل منطقيًا: Dashboard, Students (بحث جزئي بالاسم/الرقم), Content Management, Submission Management (Review + Grade + Notes + Request Resubmission).
-
----
-
-## Phase 5 ✅ Admin Web Panel
-
-### تحديث مهم: تم التخلص من الترخيص التجاري
-استبدلت `syncfusion_flutter_pdfviewer` بـ **`pdfx`** (رخصة MIT، مفتوح المصدر بالكامل). `PdfViewerWidget` أُعيد بناؤه بالكامل عليها — يدعم pinch-to-zoom وعداد صفحات، بدون أي قيود تجارية أو Community License مطلوبة.
-
-### ما تم بناؤه
-- **`AdminRepository`**: كل عمليات الإدارة (Dashboard stats، بحث الطلاب، إدارة المواد/المحتوى مع رفع PDF، إدارة الحلول والتصحيح، الإشعارات). كل استعلام محمي بـ RLS من الخادم (`is_admin()`) — حتى لو انكسرت الواجهة، الحماية الحقيقية بالـ backend (بند 42).
-- **`AdminShell`**: Sidebar ثابت على الكمبيوتر (عرض ≥ 900)، Drawer قابل للسحب على الموبايل/تابلت — بند 49.
-- **Dashboard**: 6 بطاقات إحصائيات (طلاب، مواد، دروس، اختبارات، حلول قيد المراجعة، حلول تمت مراجعتها) + أحدث الطلاب + أحدث الحلول.
-- **Students**: بحث جزئي server-side واحد يغطي `full_name` و `student_number` معًا (بند 24) + تفعيل/تعطيل الحساب.
-- **Student Details**: بيانات الطالب + سجل كل حلوله بحالتها، مع فتح مباشر لأي حل للمراجعة.
-- **Subjects/Content Management**: إضافة مادة، تفعيل/تعطيل (Soft Delete — بند 26)، إضافة درس أو اختبار مع رفع PDF فعلي + تواريخ البداية/النهاية للاختبار (مع تحقق `until > from` في الواجهة، والقاعدة الصارمة موجودة أصلًا في DB constraint من Phase 3).
-- **Submissions Management**: قائمة + فلترة بالحالة (Chips) + بحث موحّد (اسم/رقم/عنوان اختبار).
-- **Review Submission**: يبدأ `reviewing` تلقائيًا عند الفتح إن كانت `pending` (بند 31)، عرض ملف الحل عبر نفس `PdfViewerWidget`، حفظ العلامة والملاحظات، أو طلب إعادة إرسال بسبب مكتوب (`can_resubmit=true` تلقائيًا).
-- **Admin Notifications**: إنشاء إشعار عام لكل الطلاب (تخزين في DB فقط الآن — إرسال FCM push الفعلي في Phase 6).
-- **التوجيه حسب الدور**: بعد تسجيل الدخول، admin يُوجَّه تلقائيًا لـ `/admin`، والطالب لـ `/home`. محاولة طالب الوصول لـ `/admin/*` تُعاد لـ `/home` (تجربة استخدام فقط؛ الحماية الحقيقية RLS).
-
-### اختبار المرحلة
-1. حوّل حسابك لـ admin (نفس أمر Phase 3):
-   ```sql
-   update public.profiles set role = 'admin' where email = 'بريدك';
-   ```
-2. `flutter run -d chrome` (أو أي متصفح) لتجربة الـ Responsive Layout فعليًا على الويب.
-3. سجّل دخول → يجب أن تُنقل مباشرة لـ `/admin` وترى الـ Sidebar.
-4. أضف مادة → أضف درسًا واختبارًا بملف PDF حقيقي وتواريخ صحيحة.
-5. من حساب طالب آخر: افتح الاختبار، ارفع حلًا.
-6. ارجع لحساب admin → Submissions → افتح الحل → لاحظ تغيّر الحالة لـ "قيد التصحيح" تلقائيًا → أدخل علامة واحفظ → تحقق أن حساب الطالب يرى العلامة فورًا.
-7. جرّب "طلب إعادة إرسال" → تحقق أن الطالب يرى رسالة السبب وزر "رفع حل جديد" يظهر له.
-
----
-
-## الخطوة التالية: Phase 6 — Notifications (FCM)
-- تفعيل Firebase Cloud Messaging فعليًا (`firebase_core` و`firebase_messaging` موجودتان بالـ pubspec منذ Phase 1).
-- جدول `user_devices` لتخزين tokens (جاهز من Phase 3).
-- Edge Function أو DB trigger يُرسل push حقيقي عند إدراج صف في `notifications`.
-- Deep Linking: الضغط على إشعار اختبار يفتح شاشة الاختبار مباشرة عبر GoRouter.
-
----
-
-## Phase 6 ✅ Notifications (FCM حقيقي + Deep Linking)
-
-### إعداد Firebase (خطوات لمرة واحدة)
-1. أنشئ مشروع Firebase (أو استخدم موجودًا) من [console.firebase.google.com](https://console.firebase.google.com).
-2. ثبّت FlutterFire CLI: `dart pub global activate flutterfire_cli`
-3. من جذر المشروع: `flutterfire configure` — يختار مشروع Firebase ويُنشئ `firebase_options.dart` تلقائيًا، ويُعدّل `main.dart` ليمرر `DefaultFirebaseOptions.currentPlatform` (خصوصًا ضروري على الويب).
-4. لتفعيل الإشعارات الفعلية، فعّل **"Cloud Messaging API (Legacy)"** من Google Cloud Console لنفس مشروع Firebase (Settings → Cloud Messaging → Server key القديم — كافٍ لـ MVP، راجع الملاحظة أدناه للترقية لاحقًا).
-
-### نشر الـ Edge Function
-```bash
-supabase functions deploy send-notification
-supabase secrets set FCM_SERVER_KEY=your_legacy_server_key
+```text
+upload_1758451234567_123456789.pdf
 ```
 
-### ما تم بناؤه
-- **`FcmService`**: طلب الإذن، حفظ/تحديث `fcm_token` في `user_devices` (بند 40)، عرض إشعار فعلي عبر `flutter_local_notifications` عندما يكون التطبيق مفتوحًا (foreground)، والتعامل مع 3 حالات ضغط: foreground (local notification tap)، background (`onMessageOpenedApp`)، وتطبيق مغلق تمامًا (`getInitialMessage`).
-- **`AppRouterHolder`**: مرجع ثابت لآخر `GoRouter` مُنشأ، يسمح لـ `FcmService` بالتنقّل مباشرة (Deep Linking) دون الحاجة لـ `BuildContext`.
-- **إشعارات تلقائية حقيقية** (بند 19)، تُطلق من `AdminRepository` نفسها بدون أي تدخّل يدوي من الأدمن:
-  - إضافة درس/اختبار جديد → إشعار "درس جديد" / "اختبار جديد" لكل الطلاب.
-  - حفظ تصحيح (`saveReview`) → إشعار "تم تصحيح حلّك" للطالب صاحب الحل تحديدًا.
-  - طلب إعادة إرسال (`requestResubmission`) → إشعار بالسبب للطالب تحديدًا.
-- **`NotificationsScreen`** حقيقية: قائمة من `notifications` مدمجة مع `notification_reads`، غامق/عادي حسب حالة القراءة، نقطة زرقاء للإشعار غير المقروء، تحديد كمقروء + فتح الوجهة عند الضغط.
-- **تسجيل الجهاز تلقائيًا** بعد أي نجاح لتسجيل الدخول (password أو Google) من `AuthNotifier._refresh()` — مكان واحد يغطي كل المسارات.
+The original filename, including Arabic characters, remains in the database
+`file_name` column and is shown to users. This avoids Supabase Storage
+`InvalidKey` errors for Arabic filenames.
 
-### قرار تصميمي مهم صححته أثناء البناء
-اكتشفت تعارضًا في استخدام `target_id`: تصميم الجدول الأصلي يستخدمه لتحديد **وجهة الفتح** (subject/content/submission)، لكن بند 33 يحتاج أيضًا حقل **استهداف الجمهور** (كل الطلاب / طالب معيّن). بدل إضافة عمود جديد الآن (تعقيد غير ضروري لهذه المرحلة)، استخدمت `target_id` للاستهداف فقط، وقصرت الـ Deep Linking الفعلي على الحالتين الآمنتين فعليًا: **درس جديد** و**اختبار جديد** (حيث `target_id` = معرّف المحتوى نفسه). إشعارات "تم التصحيح" و"إعادة الإرسال" تُعلم الطالب لكن تفتح فقط قائمة الإشعارات وليس الاختبار مباشرة — توسيع هذا لاحقًا يحتاج عمود `content_id` منفصل عن `target_id`، وهو تحسين مرشّح لمرحلة لاحقة إن احتجته.
+The relevant helper is:
 
-### ملاحظة للترقية لاحقًا
-FCM Legacy API يعمل الآن لكن Google توصي بـ HTTP v1 (OAuth2 + Service Account) للمشاريع الجديدة. الترقية تتطلب تعديل `supabase/functions/send-notification/index.ts` فقط — لا شيء في Flutter يتغيّر.
+```text
+lib/shared/utils/storage_file_name.dart
+```
 
-### اختبار المرحلة
-1. `flutterfire configure` + نشر الـ Edge Function + ضبط `FCM_SERVER_KEY`.
-2. `flutter run` على جهاز حقيقي (الإشعارات لا تعمل جيدًا على المحاكي أحيانًا) → اقبل إذن الإشعارات.
-3. تحقق من SQL: `select * from user_devices;` — يجب أن يظهر جهازك بعد تسجيل الدخول.
-4. من حساب admin: أضف درسًا جديدًا → يجب أن يصل إشعار فوري لجهاز الطالب (حتى لو التطبيق بالخلفية).
-5. اضغط الإشعار → يجب أن يفتح شاشة الدرس مباشرة (Deep Link).
-6. صحّح حل طالب → يجب أن يصله إشعار "تم تصحيح حلّك" فورًا.
+## Testing and validation
 
----
+Run the complete test suite:
 
-## الخطوة التالية: Phase 7 — Local Cache
-- `Hive` لتخزين إعدادات المستخدم (لغة، ثيم) وآخر محتوى تم فتحه.
-- التأكد أن التطبيق يعمل بشكل طبيعي حتى بدون اتصال، معتمدًا على الـ PDF cache الموجود أصلًا من Phase 4.
+```powershell
+flutter test
+```
+
+Run static analysis:
+
+```powershell
+flutter analyze
+```
+
+Build the production web bundle:
+
+```powershell
+flutter build web --release
+```
+
+The current test suite covers content availability, failure mapping, last-opened
+content persistence, and ASCII-safe Storage filenames. Full end-to-end tests
+against Auth, RLS, Storage, FCM, and real PDF uploads still require a configured
+Supabase/Firebase environment.
+
+## Firebase Hosting deployment
+
+Firebase Hosting serves the generated `build/web` directory. The repository
+contains a predeploy script that copies the built environment asset to the
+location expected by the web application:
+
+```powershell
+flutter build web --release
+firebase deploy --only hosting
+```
+
+`firebase.json` configures:
+
+- `build/web` as the public directory.
+- SPA rewrites to `index.html`.
+- No-cache headers for the main Flutter web files.
+- The web environment preparation script.
+
+The Firebase CLI must already be authenticated and linked to the correct
+project:
+
+```powershell
+firebase login
+firebase use educational-platform-bd155
+```
+
+## Authentication and redirects
+
+Supabase Auth uses:
+
+```text
+Supabase callback:
+https://eneqsskqrdlvpnjersrq.supabase.co/auth/v1/callback
+
+Production web redirect:
+https://educational-platform-bd155.web.app
+
+Android deep link:
+com.example.edu_platform://login-callback
+```
+
+The Android package name and deep-link scheme should not be changed without
+updating Supabase, Google Cloud, and Android manifest configuration together.
+
+## Storage buckets
+
+The current private/public behavior is defined by the SQL migrations, not by
+the Flutter UI:
+
+- `lessons`: lesson PDF files.
+- `exams`: exam PDF files.
+- `submissions`: student solution files with restricted access.
+
+When an upload fails, first confirm the authenticated profile is an active
+admin, then inspect the translated Failure diagnostic in the debug console and
+the Supabase Storage logs.
+
+## Localization
+
+Translation files:
+
+```text
+assets/lang/ar.json
+assets/lang/en.json
+```
+
+Use the localization extension:
+
+```dart
+Text(context.t('translation_key'))
+```
+
+The default locale is English. The selected locale is persisted with
+`SharedPreferences`.
+
+## Branding and icons
+
+The application name is **Mustaqbali**. The source icon is:
+
+```text
+assets/images/app-icon-edu.jpeg
+```
+
+Android launcher icons, web icons, favicon, manifest metadata, login branding,
+and splash branding are generated or configured from this asset.
+
+## Repository hygiene
+
+Ignored local/generated directories include:
+
+```text
+.dart_tool/
+build/
+.firebase/
+node_modules/
+```
+
+Do not commit:
+
+- `.env`.
+- Firebase service-account JSON files.
+- Supabase service-role keys.
+- Generated build output.
+- Local IDE state.
+
+Before removing tracked files such as legacy archives or deployment
+configuration, verify that no release or external automation still depends on
+them.
+
+## Current known follow-up work
+
+The core application and deployment path are operational, but the following
+items should be addressed in a future maintenance pass:
+
+1. Add missing Arabic localization entries for the existing
+   `edit_subject` and `edit_content` keys.
+2. Replace remaining hard-coded user-facing strings in the PDF viewer and
+   repository auth failure path with translated Failure keys.
+3. Resolve the remaining Flutter analyzer informational warnings in the admin
+   notification screen.
+4. Add integration tests for Auth, RLS roles, Storage policies, one-submission
+   enforcement, and the admin upload workflow.
+5. Review web compatibility of student PDF submission paths that currently use
+   `dart:io`.
+6. Decide whether the tracked `lib.zip` archive and legacy `vercel.json` are
+   still required; remove them only after confirming no external process uses
+   them.
+7. Add production monitoring and a documented backup/restore procedure for
+   Supabase data and Storage.
+
+## License
+
+No public license has been declared yet. Add a license before distributing the
+project outside its current repository or organization.
