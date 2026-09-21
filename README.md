@@ -337,25 +337,31 @@ Before removing tracked files such as legacy archives or deployment
 configuration, verify that no release or external automation still depends on
 them.
 
-## Current known follow-up work
+## Current status and follow-up work
 
-The core application and deployment path are operational, but the following
-items should be addressed in a future maintenance pass:
+The admin dashboard supports the operational content workflow:
 
-1. Add missing Arabic localization entries for the existing
-   `edit_subject` and `edit_content` keys.
-2. Replace remaining hard-coded user-facing strings in the PDF viewer and
-   repository auth failure path with translated Failure keys.
-3. Resolve the remaining Flutter analyzer informational warnings in the admin
-   notification screen.
-4. Add integration tests for Auth, RLS roles, Storage policies, one-submission
-   enforcement, and the admin upload workflow.
-5. Review web compatibility of student PDF submission paths that currently use
+- Add lessons and exams.
+- Edit titles, descriptions, and exam dates.
+- Preview PDFs with the eye button.
+- Soft-delete content with the delete button.
+- Restore disabled content with the active switch.
+- Reorder content.
+- Upload files with Arabic or English names.
+
+Content deletion is intentionally implemented as a soft delete. The database
+row and Storage object are retained so existing references and audit history
+are not broken.
+
+The remaining production-readiness work is:
+
+1. Add integration tests for Auth, RLS, Storage policies, one-submission
+   enforcement, and the complete admin upload/edit/delete workflow.
+2. Review web compatibility of student PDF submission paths that currently use
    `dart:io`.
-6. Decide whether the tracked `lib.zip` archive and legacy `vercel.json` are
-   still required; remove them only after confirming no external process uses
-   them.
-7. Add production monitoring and a documented backup/restore procedure for
+3. Replace the placeholder Privacy Policy and Terms text with approved legal
+   content.
+4. Add production monitoring and a documented backup/restore procedure for
    Supabase data and Storage.
 
 ## License

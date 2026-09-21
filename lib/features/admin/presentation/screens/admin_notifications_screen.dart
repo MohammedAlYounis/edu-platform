@@ -68,21 +68,20 @@ class _AdminNotificationsScreenState
             targetType: targetType,
             targetId: targetId,
           );
-      final successMessage = switch (target) {
-        _NotificationTarget.all => context.t('notification_sent_all'),
-        _NotificationTarget.subject => context.t('notification_sent_subject'),
-        _NotificationTarget.student => context.t('notification_sent_student'),
-      };
+      if (!mounted) return;
       form.reset();
       setState(() {
         _target = _NotificationTarget.all;
         _selectedSubjectId = null;
         _selectedStudentId = null;
       });
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(successMessage)));
-      }
+      final successMessage = switch (target) {
+        _NotificationTarget.all => context.t('notification_sent_all'),
+        _NotificationTarget.subject => context.t('notification_sent_subject'),
+        _NotificationTarget.student => context.t('notification_sent_student'),
+      };
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(successMessage)));
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -121,17 +120,33 @@ class _AdminNotificationsScreenState
               const SizedBox(height: 20),
               Text(context.t('notification_target_label'),
                   style: Theme.of(context).textTheme.titleSmall),
-              RadioListTile<_NotificationTarget>(
-                title: Text(context.t('notification_target_all')),
-                value: _NotificationTarget.all,
-                groupValue: _target,
-                onChanged: (v) => setState(() => _target = v!),
-              ),
-              RadioListTile<_NotificationTarget>(
-                title: Text(context.t('notification_target_subject')),
-                value: _NotificationTarget.subject,
-                groupValue: _target,
-                onChanged: (v) => setState(() => _target = v!),
+              DropdownButtonFormField<_NotificationTarget>(
+                initialValue: _target,
+                decoration: InputDecoration(
+                  labelText: context.t('notification_target_label'),
+                ),
+                items: [
+                  DropdownMenuItem(
+                    value: _NotificationTarget.all,
+                    child: Text(context.t('notification_target_all')),
+                  ),
+                  DropdownMenuItem(
+                    value: _NotificationTarget.subject,
+                    child: Text(context.t('notification_target_subject')),
+                  ),
+                  DropdownMenuItem(
+                    value: _NotificationTarget.student,
+                    child: Text(context.t('notification_target_student')),
+                  ),
+                ],
+                onChanged: (value) {
+                  if (value == null) return;
+                  setState(() {
+                    _target = value;
+                    _selectedSubjectId = null;
+                    _selectedStudentId = null;
+                  });
+                },
               ),
               if (_target == _NotificationTarget.subject)
                 subjectsAsync.when(
@@ -148,12 +163,6 @@ class _AdminNotificationsScreenState
                     onChanged: (id) => setState(() => _selectedSubjectId = id),
                   ),
                 ),
-              RadioListTile<_NotificationTarget>(
-                title: Text(context.t('notification_target_student')),
-                value: _NotificationTarget.student,
-                groupValue: _target,
-                onChanged: (v) => setState(() => _target = v!),
-              ),
               if (_target == _NotificationTarget.student)
                 studentsAsync.when(
                   loading: () => const LinearProgressIndicator(),

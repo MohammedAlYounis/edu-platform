@@ -166,6 +166,8 @@
   "submitted_solutions": "الحلول المرسلة",
 
   "add_subject": "إضافة مادة",
+  "edit_subject": "تعديل المادة",
+  "edit_content": "تعديل المحتوى",
   "title_label": "العنوان",
   "description_optional": "الوصف (اختياري)",
 
@@ -181,6 +183,14 @@
   "add_content_failed": "تعذر إضافة المحتوى، حاول مرة أخرى.",
   "content_title_required": "يرجى إدخال عنوان المحتوى.",
   "content_file_required": "يرجى اختيار ملف PDF.",
+  "delete_content": "حذف المحتوى",
+  "confirm_delete_content": "هل تريد تعطيل هذا المحتوى؟ يمكنك إعادة تفعيله لاحقًا.",
+  "delete_content_failed": "تعذر حذف المحتوى، حاول مرة أخرى.",
+  "delete": "حذف",
+  "edit": "تعديل",
+  "preview": "معاينة",
+  "pdf_load_failed": "تعذر تحميل الملف، تحقق من الاتصال وحاول مرة أخرى.",
+  "sign_in_required": "يجب تسجيل الدخول أولًا.",
 
   "search_submissions_hint": "ابحث باسم الطالب، رقمه، أو عنوان الاختبار...",
   "filter_all": "الكل",

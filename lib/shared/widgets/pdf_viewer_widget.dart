@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfx/pdfx.dart';
 
+import '../../core/localization/localization_extension.dart';
 import '../services/pdf_cache_service.dart';
 
 /// عارض PDF موحّد لكل الدروس والاختبارات — بند 17 في التصميم:
@@ -102,9 +103,12 @@ class _PdfViewerWidgetState extends ConsumerState<PdfViewerWidget> {
           children: [
             const Icon(Icons.error_outline, size: 48, color: Colors.red),
             const SizedBox(height: 12),
-            const Text('تعذر تحميل الملف، تحقق من الاتصال وحاول مرة أخرى.'),
+            Text(context.t('pdf_load_failed')),
             const SizedBox(height: 12),
-            ElevatedButton(onPressed: _load, child: const Text('إعادة المحاولة')),
+            ElevatedButton(
+              onPressed: _load,
+              child: Text(context.t('retry')),
+            ),
           ],
         ),
       );

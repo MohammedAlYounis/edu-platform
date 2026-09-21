@@ -65,7 +65,7 @@ class SubmissionsRepository {
   }) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) {
-      throw const AuthFailure('يجب تسجيل الدخول أولًا.');
+      throw const AuthFailure('sign_in_required');
     }
 
     final storagePath = 'submissions/$userId/$contentId/${createStorageFileName(fileName)}';

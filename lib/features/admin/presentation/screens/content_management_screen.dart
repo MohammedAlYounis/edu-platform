@@ -9,6 +9,7 @@ import '../../../../core/localization/localization_extension.dart';
 import '../../../../shared/utils/platform_file_bytes.dart';
 import '../../../../shared/models/content.dart';
 import '../../../../shared/widgets/state_views.dart';
+import '../../../../shared/widgets/pdf_viewer_widget.dart';
 import '../../application/admin_providers.dart';
 import '../../data/admin_repository.dart';
 
@@ -302,6 +303,53 @@ class _ContentManagementScreenState
     ref.invalidate(subjectContentsAdminProvider(subjectId));
   }
 
+  Future<void> _previewContent(Content content) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PdfViewerWidget(
+          bucket: content.isLesson ? 'lessons' : 'exams',
+          storagePath: content.filePath,
+          title: content.title,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _deleteContent(Content content) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(dialogContext.t('delete_content')),
+        content: Text(dialogContext.t('confirm_delete_content')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(dialogContext.t('cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(dialogContext.t('delete')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await ref.read(adminRepositoryProvider).deleteContent(content.id);
+      ref.invalidate(subjectContentsAdminProvider(subjectId));
+    } on Failure catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(context.t(e.messageKey))));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.t('delete_content_failed'))),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final contentsAsync = ref.watch(subjectContentsAdminProvider(subjectId));
@@ -364,8 +412,19 @@ class _ContentManagementScreenState
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
+                        icon: const Icon(Icons.visibility_outlined),
+                        tooltip: context.t('preview'),
+                        onPressed: () => _previewContent(content),
+                      ),
+                      IconButton(
                         icon: const Icon(Icons.edit_outlined),
+                        tooltip: context.t('edit'),
                         onPressed: () => _showEditContentDialog(content),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        tooltip: context.t('delete'),
+                        onPressed: () => _deleteContent(content),
                       ),
                       Switch(
                         value: content.isActive,

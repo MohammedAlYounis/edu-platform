@@ -30,12 +30,32 @@ class AdminRepository {
   Future<DashboardStats> fetchDashboardStats() async {
     try {
       final results = await Future.wait([
-        _client.from('profiles').select('id').eq('role', 'student').count(CountOption.exact),
+        _client
+            .from('profiles')
+            .select('id')
+            .eq('role', 'student')
+            .count(CountOption.exact),
         _client.from('subjects').select('id').count(CountOption.exact),
-        _client.from('contents').select('id').eq('type', 'lesson').count(CountOption.exact),
-        _client.from('contents').select('id').eq('type', 'exam').count(CountOption.exact),
-        _client.from('submissions').select('id').eq('status', 'pending').count(CountOption.exact),
-        _client.from('submissions').select('id').eq('status', 'reviewed').count(CountOption.exact),
+        _client
+            .from('contents')
+            .select('id')
+            .eq('type', 'lesson')
+            .count(CountOption.exact),
+        _client
+            .from('contents')
+            .select('id')
+            .eq('type', 'exam')
+            .count(CountOption.exact),
+        _client
+            .from('submissions')
+            .select('id')
+            .eq('status', 'pending')
+            .count(CountOption.exact),
+        _client
+            .from('submissions')
+            .select('id')
+            .eq('status', 'reviewed')
+            .count(CountOption.exact),
       ]);
 
       return DashboardStats(
@@ -81,7 +101,8 @@ class AdminRepository {
       var builder = _client.from('profiles').select().eq('role', 'student');
 
       if (trimmed.isNotEmpty) {
-        builder = builder.or('full_name.ilike.%$trimmed%,student_number.ilike.%$trimmed%');
+        builder = builder
+            .or('full_name.ilike.%$trimmed%,student_number.ilike.%$trimmed%');
       }
 
       final rows = await builder.order('full_name').limit(50);
@@ -93,7 +114,8 @@ class AdminRepository {
 
   Future<StudentListItem> fetchStudentDetails(String studentId) async {
     try {
-      final row = await _client.from('profiles').select().eq('id', studentId).single();
+      final row =
+          await _client.from('profiles').select().eq('id', studentId).single();
       return StudentListItem.fromJson(row);
     } catch (e, st) {
       throw mapExceptionToFailure(e, st);
@@ -106,7 +128,9 @@ class AdminRepository {
 
   Future<void> setStudentActive(String studentId, bool isActive) async {
     try {
-      await _client.from('profiles').update({'is_active': isActive}).eq('id', studentId);
+      await _client
+          .from('profiles')
+          .update({'is_active': isActive}).eq('id', studentId);
     } catch (e, st) {
       throw mapExceptionToFailure(e, st);
     }
@@ -157,7 +181,9 @@ class AdminRepository {
   /// Soft delete — بند 26: "يفضل استخدام Soft Delete بدل حذف البيانات مباشرة"
   Future<void> setSubjectActive(String id, bool isActive) async {
     try {
-      await _client.from('subjects').update({'is_active': isActive}).eq('id', id);
+      await _client
+          .from('subjects')
+          .update({'is_active': isActive}).eq('id', id);
     } catch (e, st) {
       throw mapExceptionToFailure(e, st);
     }
@@ -166,7 +192,9 @@ class AdminRepository {
   Future<void> syncSubjectOrder(List<Subject> ordered) async {
     try {
       for (var i = 0; i < ordered.length; i++) {
-        await _client.from('subjects').update({'order_index': i}).eq('id', ordered[i].id);
+        await _client
+            .from('subjects')
+            .update({'order_index': i}).eq('id', ordered[i].id);
       }
     } catch (e, st) {
       throw mapExceptionToFailure(e, st);
@@ -240,9 +268,13 @@ class AdminRepository {
       // و"New Exam... عند إضافة اختبار جديد". فشل الإشعار لا يُفشل إنشاء المحتوى.
       try {
         await createNotification(
-          title: type == ContentType.lesson ? 'درس جديد: $title' : 'اختبار جديد: $title',
+          title: type == ContentType.lesson
+              ? 'درس جديد: $title'
+              : 'اختبار جديد: $title',
           body: description ?? '',
-          type: type == ContentType.lesson ? NotificationType.lesson : NotificationType.exam,
+          type: type == ContentType.lesson
+              ? NotificationType.lesson
+              : NotificationType.exam,
           targetType: 'subject',
           targetId: subjectId,
         );
@@ -279,16 +311,22 @@ class AdminRepository {
 
   Future<void> setContentActive(String id, bool isActive) async {
     try {
-      await _client.from('contents').update({'is_active': isActive}).eq('id', id);
+      await _client
+          .from('contents')
+          .update({'is_active': isActive}).eq('id', id);
     } catch (e, st) {
       throw mapExceptionToFailure(e, st);
     }
   }
 
+  Future<void> deleteContent(String id) => setContentActive(id, false);
+
   Future<void> syncContentOrder(String subjectId, List<Content> ordered) async {
     try {
       for (var i = 0; i < ordered.length; i++) {
-        await _client.from('contents').update({'order_index': i}).eq('id', ordered[i].id);
+        await _client
+            .from('contents')
+            .update({'order_index': i}).eq('id', ordered[i].id);
       }
     } catch (e, st) {
       throw mapExceptionToFailure(e, st);
@@ -308,20 +346,26 @@ class AdminRepository {
     int limit = 100,
   }) async {
     try {
-      var builder = _client.from('submissions').select().eq('is_superseded', false);
+      var builder =
+          _client.from('submissions').select().eq('is_superseded', false);
 
       if (status != null) builder = builder.eq('status', status.toDbValue());
       if (studentId != null) builder = builder.eq('student_id', studentId);
 
-      final rows = await builder.order('submitted_at', ascending: false).limit(limit);
+      final rows =
+          await builder.order('submitted_at', ascending: false).limit(limit);
 
       if (rows.isEmpty) return [];
 
-      final studentIds = rows.map((r) => r['student_id'] as String).toSet().toList();
-      final contentIds = rows.map((r) => r['content_id'] as String).toSet().toList();
+      final studentIds =
+          rows.map((r) => r['student_id'] as String).toSet().toList();
+      final contentIds =
+          rows.map((r) => r['content_id'] as String).toSet().toList();
 
-      final studentsRows = await _client.from('profiles').select().inFilter('id', studentIds);
-      final contentsRows = await _client.from('contents').select().inFilter('id', contentIds);
+      final studentsRows =
+          await _client.from('profiles').select().inFilter('id', studentIds);
+      final contentsRows =
+          await _client.from('contents').select().inFilter('id', contentIds);
 
       final studentsById = {for (final s in studentsRows) s['id'] as String: s};
       final contentsById = {for (final c in contentsRows) c['id'] as String: c};
@@ -360,7 +404,11 @@ class AdminRepository {
 
   Future<Map<String, dynamic>> fetchSubmissionRaw(String submissionId) async {
     try {
-      return await _client.from('submissions').select().eq('id', submissionId).single();
+      return await _client
+          .from('submissions')
+          .select()
+          .eq('id', submissionId)
+          .single();
     } catch (e, st) {
       throw mapExceptionToFailure(e, st);
     }
@@ -369,10 +417,16 @@ class AdminRepository {
   Future<SubmissionDetails> fetchSubmissionDetails(String submissionId) async {
     try {
       final row = await fetchSubmissionRaw(submissionId);
-      final student =
-          await _client.from('profiles').select().eq('id', row['student_id'] as String).single();
-      final content =
-          await _client.from('contents').select().eq('id', row['content_id'] as String).single();
+      final student = await _client
+          .from('profiles')
+          .select()
+          .eq('id', row['student_id'] as String)
+          .single();
+      final content = await _client
+          .from('contents')
+          .select()
+          .eq('id', row['content_id'] as String)
+          .single();
 
       return SubmissionDetails(
         id: row['id'] as String,
@@ -463,7 +517,9 @@ class AdminRepository {
 
   Future<String> getSubmissionSignedUrl(String storagePath) async {
     try {
-      return await _client.storage.from('submissions').createSignedUrl(storagePath, 300);
+      return await _client.storage
+          .from('submissions')
+          .createSignedUrl(storagePath, 300);
     } catch (e, st) {
       throw mapExceptionToFailure(e, st);
     }
